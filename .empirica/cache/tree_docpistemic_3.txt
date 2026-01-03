@@ -1,0 +1,22 @@
+/home/yogapad/empirical-ai/docpistemic
+├── docpistemic
+│   ├── assessment
+│   │   ├── coverage.py
+│   │   ├── epistemic.py
+│   │   └── __init__.py
+│   ├── discovery
+│   │   ├── api_discovery.py
+│   │   ├── cli_discovery.py
+│   │   ├── config_discovery.py
+│   │   ├── __init__.py
+│   │   └── module_discovery.py
+│   ├── cli.py
+│   └── __init__.py
+├── packaging
+│   └── homebrew
+│       └── docpistemic.rb
+├── Dockerfile
+├── pyproject.toml
+└── README.md
+
+6 directories, 14 files

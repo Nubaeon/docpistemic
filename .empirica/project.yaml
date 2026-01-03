@@ -1,0 +1,10 @@
+version: '1.0'
+name: docpistemic
+description: docpistemic project
+beads:
+  default_enabled: false
+subjects: {}
+auto_detect:
+  enabled: true
+  method: path_match
+project_id: 0c74d589-5dd0-4d0b-b658-0a1e258b5f63
