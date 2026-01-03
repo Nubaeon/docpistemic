@@ -85,19 +85,31 @@ class CLIDiscovery:
     def _discover_click(self, file: Path, content: str):
         """Discover click commands."""
         # @click.command() or @app.command()
-        # Pattern: @something.command(name='cmd') or just def cmd():
+        # Pattern: @something.command(name='cmd') or @something.command()
 
-        # Find @click.command decorators
-        cmd_pattern = r"@\w+\.command\s*\(\s*(?:name\s*=\s*)?['\"]?([^'\")\s]+)?['\"]?\s*\)"
+        # Find @click.command or @app.command decorators
+        cmd_pattern = r"@(\w+)\.command\s*\("
         for match in re.finditer(cmd_pattern, content):
-            name = match.group(1) if match.group(1) else "unknown"
+            decorator_obj = match.group(1)
             line_num = content[:match.start()].count('\n') + 1
 
-            # Try to get the function name if no explicit name
-            if name == "unknown":
-                func_match = re.search(r"def\s+(\w+)\s*\(", content[match.end():match.end()+100])
+            # Look for explicit name= parameter with quotes
+            rest = content[match.end():match.end()+200]
+            name_match = re.search(r"name\s*=\s*['\"]([^'\"]+)['\"]", rest)
+
+            if name_match:
+                name = name_match.group(1)
+            else:
+                # Get the function name from def statement
+                func_match = re.search(r"\)\s*\n\s*(?:async\s+)?def\s+(\w+)\s*\(", rest)
                 if func_match:
                     name = func_match.group(1).replace("_", "-")
+                else:
+                    continue  # Skip if we can't find a valid command name
+
+            # Filter out false positives (parameters, not command names)
+            if "=" in name or name.startswith("_"):
+                continue
 
             self.commands.append(CLICommand(
                 name=name,

@@ -14,10 +14,41 @@ Docpistemic applies **epistemic principles** to documentation assessment. Instea
 
 It measures the gap between what your code *does* and what your docs *explain*.
 
+## Installation
+
+### PyPI (Recommended)
+```bash
+pip install docpistemic
+```
+
+### Docker
+```bash
+# Pull from DockerHub
+docker pull nubaeon/docpistemic:latest
+
+# Assess any GitHub repo
+docker run --rm nubaeon/docpistemic assess https://github.com/user/repo
+
+# Assess local project
+docker run --rm -v $(pwd):/project nubaeon/docpistemic assess /project
+```
+
+### Homebrew (macOS/Linux)
+```bash
+brew tap nubaeon/tap
+brew install docpistemic
+```
+
+### From Source
+```bash
+pip install git+https://github.com/Nubaeon/docpistemic.git
+```
+
 ## Quick Start
 
 ```bash
-pip install docpistemic
+# If installed via pip/homebrew
+docpistemic assess .
 
 # Assess current project
 docpistemic assess .
