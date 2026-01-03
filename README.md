@@ -27,7 +27,21 @@ docpistemic assess https://github.com/user/repo
 
 # JSON output for CI
 docpistemic assess . --output json
+
+# Thorough multi-pass analysis (turtle depth)
+docpistemic assess . --depth 3 --verbose
+
+# Log findings to Empirica (if you have an active session)
+docpistemic assess . --log
 ```
+
+### Turtle Depth Levels
+
+| Depth | Mode | Modules | Use Case |
+|-------|------|---------|----------|
+| 1 | Quick | 20 | Fast CI checks |
+| 2 | Standard | 50 | Regular assessment |
+| 3 | Thorough | 100 | Pre-release audit |
 
 ## Example Output
 
@@ -93,6 +107,34 @@ This shifts focus from **code coverage** to **user coverage**.
 ## Powered by Empirica
 
 Docpistemic uses [Empirica](https://github.com/Nubaeon/empirica) for epistemic assessment — the same framework used by AI agents for genuine self-awareness.
+
+### Why Empirica?
+
+Empirica provides:
+- **Epistemic vectors** (know/uncertainty) - calibrated self-assessment
+- **Moon phase indicators** - visual coverage signals
+- **Finding logging** - track documentation gaps over time
+- **Session continuity** - maintain assessment history across sessions
+
+### Empirica Integration
+
+When you install docpistemic, Empirica is installed as a dependency. You can optionally:
+
+```bash
+# Initialize Empirica in your project
+empirica project-init
+
+# Create a session
+empirica session-create --ai-id your-name
+
+# Run docpistemic with logging to track findings
+docpistemic assess . --log
+
+# View your documentation debt over time
+empirica finding-log --list
+```
+
+This lets you track documentation coverage improvements across releases.
 
 ## License
 

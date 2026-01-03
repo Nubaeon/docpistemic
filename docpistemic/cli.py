@@ -6,6 +6,7 @@ Usage:
     docpistemic assess /path/to/project     # Assess local project
     docpistemic assess https://github.com/user/repo  # Assess remote repo
     docpistemic assess . --output json      # JSON output for CI
+    docpistemic assess . --depth 3          # Multi-pass turtle assessment
 """
 
 import json
@@ -17,6 +18,14 @@ from typing import Optional
 import typer
 from rich.console import Console
 from rich.table import Table
+
+# Empirica integration - uses signaling for moon phases and finding logging
+try:
+    from empirica.core.signaling import DriftLevel
+    from empirica.data.session_database import SessionDatabase
+    EMPIRICA_AVAILABLE = True
+except ImportError:
+    EMPIRICA_AVAILABLE = False
 
 from .discovery import CLIDiscovery, ModuleDiscovery, APIDiscovery, ConfigDiscovery
 from .assessment import CoverageAnalyzer, EpistemicAssessor
@@ -55,14 +64,22 @@ def assess(
     target: str = typer.Argument(..., help="Path to project or GitHub URL"),
     output: str = typer.Option("human", "--output", "-o", help="Output format: human or json"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
+    depth: int = typer.Option(1, "--depth", "-d", help="Turtle depth: 1=quick, 2=standard, 3=thorough"),
+    log_findings: bool = typer.Option(False, "--log", help="Log findings to Empirica (requires active session)"),
 ):
     """
     Assess documentation coverage for a project.
+
+    The --depth flag controls how thoroughly we turtle through the codebase:
+    - depth=1: Quick scan (default) - main package only
+    - depth=2: Standard - includes nested modules
+    - depth=3: Thorough - full recursive analysis with multiple passes
 
     Examples:
         docpistemic assess .
         docpistemic assess /path/to/project
         docpistemic assess https://github.com/user/repo
+        docpistemic assess . --depth 3 --verbose
     """
     # Determine if target is URL or path
     is_remote = target.startswith("http://") or target.startswith("https://")
@@ -78,31 +95,78 @@ def assess(
             raise typer.Exit(1)
 
     try:
-        result = run_assessment(project_path, verbose)
+        result = run_assessment(project_path, verbose, depth)
 
         if output == "json":
             print(json.dumps(result, indent=2))
         else:
-            print_human_output(result, verbose)
+            print_human_output(result, verbose, depth)
+
+        # Log findings to Empirica if requested
+        if log_findings and EMPIRICA_AVAILABLE:
+            log_to_empirica(result)
 
     finally:
         if cleanup_needed:
             shutil.rmtree(project_path, ignore_errors=True)
 
 
-def run_assessment(root: Path, verbose: bool = False) -> dict:
-    """Run the full assessment pipeline."""
+def log_to_empirica(result: dict):
+    """Log assessment findings to Empirica."""
+    try:
+        import subprocess
+        epistemic = result["epistemic"]
+
+        # Log the overall finding
+        finding = (
+            f"Docpistemic assessment: {epistemic['overall_coverage']}% coverage, "
+            f"know={epistemic['know']}, uncertainty={epistemic['uncertainty']}"
+        )
+
+        # Calculate impact based on coverage gaps
+        impact = 0.5 if epistemic["overall_coverage"] >= 70 else 0.7
+
+        subprocess.run(
+            ["empirica", "finding-log", "--finding", finding, "--impact", str(impact)],
+            capture_output=True,
+            timeout=5
+        )
+
+        # Log undocumented items as unknowns
+        for rec in epistemic.get("recommendations", [])[:3]:
+            subprocess.run(
+                ["empirica", "unknown-log", "--unknown", rec],
+                capture_output=True,
+                timeout=5
+            )
+
+        console.print("[dim]Findings logged to Empirica[/dim]")
+    except Exception as e:
+        console.print(f"[dim]Could not log to Empirica: {e}[/dim]")
+
+
+def run_assessment(root: Path, verbose: bool = False, depth: int = 1) -> dict:
+    """
+    Run the full assessment pipeline.
+
+    Depth controls turtle recursion:
+    - 1: Quick scan (20 modules max)
+    - 2: Standard (50 modules max)
+    - 3: Thorough (100 modules, multiple passes)
+    """
+    module_limits = {1: 20, 2: 50, 3: 100}
+    module_limit = module_limits.get(depth, 20)
 
     # Discovery phase
     if verbose:
-        console.print("[dim]Discovering features...[/dim]")
+        console.print(f"[dim]Discovering features (depth={depth})...[/dim]")
 
     cli_discovery = CLIDiscovery(root)
     cli_commands = cli_discovery.discover()
 
     module_discovery = ModuleDiscovery(root)
     modules = module_discovery.discover()
-    key_classes = module_discovery.get_key_classes(limit=20)
+    key_classes = module_discovery.get_key_classes(limit=module_limit)
 
     api_discovery = APIDiscovery(root)
     endpoints = api_discovery.discover()
@@ -157,14 +221,17 @@ def run_assessment(root: Path, verbose: bool = False) -> dict:
     }
 
 
-def print_human_output(result: dict, verbose: bool):
+def print_human_output(result: dict, verbose: bool, depth: int = 1):
     """Print human-readable output."""
     epistemic = result["epistemic"]
     categories = result["categories"]
 
+    depth_labels = {1: "Quick", 2: "Standard", 3: "Thorough"}
+    depth_label = depth_labels.get(depth, "Quick")
+
     console.print()
     console.print("=" * 60)
-    console.print("[bold]📚 DOCPISTEMIC ASSESSMENT[/bold]")
+    console.print(f"[bold]📚 DOCPISTEMIC ASSESSMENT[/bold] [dim]({depth_label})[/dim]")
     console.print("=" * 60)
 
     # Overall score
