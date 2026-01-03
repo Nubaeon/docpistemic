@@ -129,11 +129,30 @@ docpistemic assess . --log
 
 ## Philosophy
 
-Traditional tools ask: *"Is there a docstring?"* (binary)
+### Why "Turtle Depth"?
 
-Docpistemic asks: *"Would a user discover this feature?"* (epistemic)
+The phrase **"turtles all the way down"** comes from a famous anecdote about infinite regress:
 
-This shifts focus from **code coverage** to **user coverage**.
+> A scientist finishes a lecture on cosmology. An elderly woman in the audience objects: "What you have told us is rubbish. The world is really a flat plate supported on the back of a giant tortoise."
+>
+> The scientist asks, "And what is the tortoise standing on?"
+>
+> The woman replies: "You're very clever, young man, but it's turtles all the way down!"
+
+The story illustrates a fundamental problem: *any explanation requires a further explanation*. In documentation, this manifests as a recursive question:
+
+- Does feature X have docs? → Do the docs explain the context needed to understand X? → Do *those* docs explain their prerequisites? → ...
+
+Traditional tools stop at the first turtle. Docpistemic goes deeper.
+
+### Epistemic vs Binary Coverage
+
+| Approach | Question | Answer |
+|----------|----------|--------|
+| Traditional | "Is there a docstring?" | Yes/No |
+| Docpistemic | "Would a user discover this feature?" | know/uncertainty vectors |
+
+This shifts focus from **code coverage** to **user coverage** — from what the code *says* to what the user *knows*.
 
 ## Powered by Empirica
 
