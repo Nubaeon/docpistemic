@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docpistemic"
+version = "0.1.0"
+description = "Epistemic documentation coverage assessment - know what your docs know"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    {name = "Docpistemic Team"}
+]
+keywords = ["documentation", "coverage", "epistemic", "assessment", "python", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+dependencies = [
+    "empirica>=1.2.3",      # Epistemic framework (the trojan horse)
+    "rich>=13.0",           # Beautiful terminal output
+    "typer>=0.9",           # CLI framework
+    "gitpython>=3.1.0",     # For cloning remote repos
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+docpistemic = "docpistemic.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/Nubaeon/docpistemic"
+Documentation = "https://github.com/Nubaeon/docpistemic#readme"
+Repository = "https://github.com/Nubaeon/docpistemic"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["docpistemic*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+extend-select = ["E", "W", "F", "I", "B", "UP", "C4", "SIM"]
