@@ -39,3 +39,6 @@ htmlcov/
 # Misc
 .DS_Store
 *.log
+
+# Empirica local sessions
+.empirica/sessions/
