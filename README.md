@@ -6,6 +6,12 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
+> **0.2.0 (2026-05-07):** Coverage assessment now counts every public class
+> AND every module-level function discovered (previously capped at top-20
+> classes — most public functions were invisible). New `--strict` flag
+> requires AST docstring presence (no substring-match fallback). See
+> [CHANGELOG.md](CHANGELOG.md).
+
 ## What is Docpistemic?
 
 Docpistemic applies **epistemic principles** to documentation assessment. Instead of just checking "does this function have a docstring?", it asks the harder question:
@@ -47,32 +53,50 @@ pip install git+https://github.com/Nubaeon/docpistemic.git
 ## Quick Start
 
 ```bash
-# If installed via pip/homebrew
-docpistemic assess .
-
 # Assess current project
 docpistemic assess .
 
 # Assess a GitHub repo
 docpistemic assess https://github.com/user/repo
 
-# JSON output for CI
+# JSON output for CI / compliance pipelines
 docpistemic assess . --output json
 
-# Thorough multi-pass analysis (turtle depth)
+# Strict mode — requires AST docstring presence, no substring-match fallback
+docpistemic assess . --strict
+
+# Show more undocumented items in the report
 docpistemic assess . --depth 3 --verbose
 
 # Log findings to Empirica (if you have an active session)
 docpistemic assess . --log
 ```
 
-### Turtle Depth Levels
+### `--depth` controls the report, not the denominator
 
-| Depth | Mode | Modules | Use Case |
-|-------|------|---------|----------|
-| 1 | Quick | 20 | Fast CI checks |
-| 2 | Standard | 50 | Regular assessment |
-| 3 | Thorough | 100 | Pre-release audit |
+`--depth N` controls how many undocumented items are surfaced in the
+report per category. The coverage denominator always counts every public
+class and every public module-level function the discoverer found —
+adding new functions to your project always moves the metric.
+
+| Depth | Mode | Undocumented preview | Use Case |
+|-------|------|----------------------|----------|
+| 1 | Quick | top 20 per category | Fast CI checks |
+| 2 | Standard | top 50 per category | Regular assessment |
+| 3 | Thorough | top 100 per category | Pre-release audit |
+
+### `--strict`: AST docstring as the primary signal
+
+By default, an item is "documented" if its name appears anywhere in
+README.md or `docs/*.md` OR if it has an AST docstring. Substring match
+has false positives (a class named `Commit` matches every changelog
+entry). `--strict` mode requires an AST docstring — more honest, more
+conservative coverage %.
+
+```bash
+docpistemic assess .            # Permissive: substring or docstring
+docpistemic assess . --strict   # Strict: docstring only
+```
 
 ## Example Output
 
@@ -81,32 +105,36 @@ docpistemic assess . --log
 📚 DOCPISTEMIC ASSESSMENT
 ============================================================
 
-🌔 Overall Coverage: 72.5%
-   Features: 58/80 documented
+🌔 Overall Coverage: 94.6%
+   Features: 1745/1844 documented
 
 📊 Epistemic Assessment:
-   know: 0.72
-   uncertainty: 0.28
-   → Documentation has notable gaps
+   know: 0.95
+   uncertainty: 0.05
+   → Documentation is comprehensive
 
 📋 Category Coverage:
 --------------------------------------------------
-   🌕 CLI Commands: 85% (17/20)
-   🌓 Core Modules: 60% (12/20)
-   🌒 API Endpoints: 35% (7/20)
-   🌑 Configuration: 10% (2/20)
+   🌕 CLI Commands: 99.6% (272/273)
+   🌕 Classes: 93.8% (380/405)
+   🌔 Public Functions: 93.7% (991/1058)
+   🌕 API Endpoints: 92.3% (72/78)
+   🌕 Configuration: 100% (30/30)
 
 💡 Recommendations:
-   • Document API Endpoints: /api/users, /api/auth, /api/settings
-   • Document Configuration: DATABASE_URL, API_KEY, DEBUG
+   • Document Public Functions: _resolve_artifact_by_id, _walk_graph, ...
+   • Document Classes: _ReadOnlyDB, ...
+
+Discovered: 273 CLI commands, 405 classes, 1058 public functions,
+            78 API endpoints, 30 config options (strict)
 ============================================================
 ```
 
 ## How It Works
 
-1. **Discovery** - Auto-detects CLI framework (argparse, click, typer), modules, classes, API routes
+1. **Discovery** - Auto-detects CLI framework (argparse, click, typer), classes, public module-level functions, API routes (FastAPI / Flask / Django), config options
 2. **Documentation Scan** - Reads README, docs/, docstrings
-3. **Coverage Mapping** - Maps features → documentation
+3. **Coverage Mapping** - Maps features → documentation (every class + function, no top-N cap)
 4. **Epistemic Assessment** - Calculates know/uncertainty vectors
 5. **Recommendations** - Prioritizes what to document next
 
