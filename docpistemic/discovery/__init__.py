@@ -8,10 +8,10 @@ Supports:
 - Configuration: env vars, config files
 """
 
-from .cli_discovery import CLIDiscovery
-from .module_discovery import ModuleDiscovery
 from .api_discovery import APIDiscovery
+from .cli_discovery import CLIDiscovery
 from .config_discovery import ConfigDiscovery
+from .module_discovery import ModuleDiscovery
 
 __all__ = [
     "CLIDiscovery",

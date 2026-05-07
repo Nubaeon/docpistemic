@@ -2,14 +2,13 @@
 Coverage Analyzer - Map discovered features to documentation.
 """
 
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..discovery.cli_discovery import CLICommand
-from ..discovery.module_discovery import DiscoveredModule
 from ..discovery.api_discovery import APIEndpoint
+from ..discovery.cli_discovery import CLICommand
 from ..discovery.config_discovery import ConfigOption
+from ..discovery.module_discovery import DiscoveredModule
 
 
 @dataclass
@@ -41,11 +40,19 @@ class CoverageResult:
 
 
 class CoverageAnalyzer:
-    """Analyze documentation coverage for discovered features."""
+    """Analyze documentation coverage for discovered features.
 
-    def __init__(self, root: Path):
+    Pass `strict=True` at construction to require AST docstring presence as
+    the primary signal (instead of substring-match on docs content). Strict
+    mode is more honest — substring match has false positives ("commit"
+    matching every changelog entry, etc.) — but takes a stricter view of
+    "documented" so coverage numbers will drop.
+    """
+
+    def __init__(self, root: Path, strict: bool = False):
         self.root = root
         self.docs_content = ""
+        self.strict = strict
 
     def load_documentation(self):
         """Load all documentation content."""
@@ -112,20 +119,35 @@ class CoverageAnalyzer:
             undocumented=undocumented
         )
 
-    def analyze_module_coverage(self, modules: list[DiscoveredModule]) -> CoverageResult:
-        """Analyze module/class documentation coverage."""
+    def analyze_module_coverage(
+        self,
+        modules: list[DiscoveredModule],
+        category: str = "Core Modules",
+    ) -> CoverageResult:
+        """Analyze module/class/function documentation coverage.
+
+        `category` lets the caller bucket the same analyzer into multiple
+        categories (e.g. "Classes" vs "Public Functions") without inventing
+        a new method per category.
+
+        In strict mode: requires AST docstring presence (mod.docstring truthy).
+        Non-strict (default): docstring OR name appears in docs content.
+        """
         documented = []
         undocumented = []
 
         for mod in modules:
-            # Check both the name and if it has a docstring
-            if self._is_documented(mod.name) or mod.docstring:
+            if self.strict:
+                is_doc = bool(mod.docstring)
+            else:
+                is_doc = self._is_documented(mod.name) or bool(mod.docstring)
+            if is_doc:
                 documented.append(mod.name)
             else:
                 undocumented.append(mod.name)
 
         return CoverageResult(
-            category="Core Modules",
+            category=category,
             total=len(modules),
             documented=len(documented),
             items=[m.name for m in modules],

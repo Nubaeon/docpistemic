@@ -75,13 +75,22 @@ class ModuleDiscovery:
         return None
 
     def _should_skip(self, path: Path) -> bool:
-        """Skip test files, internal modules, etc."""
-        skip_patterns = [
-            "__pycache__", ".venv", "venv", "test_", "_test.py",
-            "tests/", "conftest", "migrations/"
-        ]
-        path_str = str(path)
-        return any(p in path_str for p in skip_patterns)
+        """Skip test files, internal modules, etc.
+
+        Match patterns against directory-name parts and the file basename
+        rather than the full path string. Prevents false positives like
+        pytest's `/tmp/pytest-of-USER/test_X/` parent directories triggering
+        a skip on real package files inside.
+        """
+        # Directory-name skips (anywhere in the path)
+        skip_dirs = {"__pycache__", ".venv", "venv", "tests", "migrations"}
+        if any(part in skip_dirs for part in path.parts):
+            return True
+        # Filename skips (basename only)
+        name = path.name
+        if name.startswith("test_") or name.endswith("_test.py") or name.startswith("conftest"):
+            return True
+        return False
 
     def _parse_file(self, file: Path):
         """Parse a Python file for classes and functions."""
